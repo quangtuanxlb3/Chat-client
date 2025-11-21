@@ -1,26 +1,50 @@
-import { HiPencilAlt } from "react-icons/hi";
 import ChatItem from "./ChatItem";
-import { Button } from "flowbite-react";
 
-export default function ChatList() {
+export type Chat = {
+  id: number;
+  name: string;
+  lastMessage?: string;
+  time?: string;
+  unread?: number;
+  avatar?: string;
+};
+
+type Props = {
+  chats: Chat[];
+  activeId: number | null;
+  onSelect: (id: number) => void;
+};
+
+export default function ChatList({ chats, activeId, onSelect }: Props) {
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-row items-center justify-between py-4 ps-6 pe-3">
-        <h4 className="text-xl font-semibold dark:text-white">Chats</h4>
-        <Button size="xs" color="light" className="cursor-pointer border-0">
-          <HiPencilAlt className="h-5 w-5" />
-        </Button>
+      <div className="border-b border-gray-200 p-3 dark:border-gray-700">
+        <h2 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+          Chats
+        </h2>
+        <input
+          aria-label="Search chats"
+          className="w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-800 outline-none focus:border-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+          placeholder="Search by name or message"
+        />
       </div>
-      <div className="h-full overflow-auto px-2 py-0">
-        <ul>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((item) => (
-            <ChatItem key={item} />
+
+      <div className="flex-1 overflow-y-auto p-2">
+        <ul className="space-y-1">
+          {chats.map((c) => (
+            <li key={c.id}>
+              <ChatItem
+                name={c.name}
+                lastMessage={c.lastMessage}
+                time={c.time}
+                unread={c.unread}
+                active={activeId === c.id}
+                onClick={() => onSelect(c.id)}
+              />
+            </li>
           ))}
         </ul>
       </div>
-      {/* <div className="border-t-1 border-gray-200 p-4 dark:border-gray-700">
-        abc
-      </div> */}
     </div>
   );
 }

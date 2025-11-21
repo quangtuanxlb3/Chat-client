@@ -11,7 +11,7 @@ export default function ConversationItem({ id }: { id: number }) {
       />
       <div className="flex flex-col gap-2">
         <span className="text-md font-semibold text-gray-900 dark:text-white">
-          Nguyễn Duy Phúc
+          Trinh Quang Tuan
           <span className="ms-3 text-sm font-normal text-gray-500 dark:text-gray-400">
             11:30 18/11/2025
           </span>
