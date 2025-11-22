@@ -18,13 +18,13 @@ const initialMessages: Message[] = [
   {
     id: 1,
     fromMe: false,
-    text: "Hello, đây là demo tin nhắn của DotChat.",
+    text: "Hello, đây là demo tin nhắn của UTChat.",
     time: "09:00",
   },
   {
     id: 2,
     fromMe: true,
-    text: "OK, giao diện mới nhìn cũng ổn 😄",
+    text: "OK, Chao cau 😄",
     time: "09:01",
   },
 ];
@@ -38,7 +38,14 @@ type Props = {
   onSendSticker?: (stickerUrl: string) => void;
 };
 
-export default function Conversation({ chat, messages: messagesProp, onSend, onSendImage, onSendFile, onSendSticker }: Props) {
+export default function Conversation({
+  chat,
+  messages: messagesProp,
+  onSend,
+  onSendImage,
+  onSendFile,
+  onSendSticker,
+}: Props) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
