@@ -2,6 +2,7 @@ import { Button, Label, TextInput } from "flowbite-react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useNavigate } from "react-router-dom";
+import AuthService from "../services/authService";
 
 const API_BASE_URL = "http://localhost:5000/api";
 
@@ -31,35 +32,20 @@ export default function Register() {
       confirmPassword: "",
     },
     validationSchema: RegisterSchema,
+
     onSubmit: async (values, { setSubmitting, setStatus }) => {
       setStatus(undefined);
       try {
-        const res = await fetch(`${API_BASE_URL}/auth/register`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            fullname: values.fullname,
-            username: values.username,
-            password: values.password,
-          }),
-        });
+        setSubmitting(true);
+        const res = await AuthService.register(values);
 
-        const data = await res.json();
-
-        if (!res.ok || data.status !== "success") {
-          setStatus(data.message || "Đăng ký thất bại, vui lòng thử lại.");
-          return;
-        }
-
-        setStatus("Đăng ký thành công! Vui lòng đăng nhập.");
-        // Chờ 1 tí rồi chuyển sang login
-        setTimeout(() => {
+        if (res?.status === "success") {
           navigate("/auth/login");
-        }, 800);
+        } else {
+          setStatus(res.message);
+        }
       } catch (err) {
-        setStatus("Không kết nối được server. Hãy kiểm tra lại backend.");
+        console.log("Không kết nối được server. Hãy kiểm tra lại backend.");
       } finally {
         setSubmitting(false);
       }

@@ -1,26 +1,52 @@
 import { Avatar } from "flowbite-react";
+import type { MessageType } from "../../types/Message";
 
-export default function ConversationItem({ id }: { id: number }) {
+type Props = {
+  message: MessageType;
+};
+
+export default function ConversationItem({ message }: Props) {
+  const user = JSON.parse(localStorage.getItem("chat-user") || "{}");
+
+  // Kiểm tra xem message có phải của user hiện tại
+  const isOwnMessage = user._id === message.sender._id;
+
   return (
-    <div className="mb-5 flex flex-row items-start gap-3">
+    <div
+      className={`mb-5 flex items-start gap-3 ${
+        isOwnMessage ? "flex-row-reverse text-right" : "flex-row"
+      }`}
+    >
       <Avatar
         size="sm"
-        img="https://flowbite.com/docs/images/people/profile-picture-5.jpg"
-        alt="avatar of Jese"
+        img={
+          message.sender.avatar ||
+          "https://flowbite.com/docs/images/people/profile-picture-5.jpg"
+        }
+        alt={`avatar of ${message.sender.username}`}
         rounded
       />
-      <div className="flex flex-col gap-2">
-        <span className="text-md font-semibold text-gray-900 dark:text-white">
-          Trinh Quang Tuan
+      <div className="flex max-w-[70%] flex-col gap-2">
+        <span
+          className={`text-md font-semibold ${
+            isOwnMessage
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-gray-900 dark:text-white"
+          }`}
+        >
+          {message.sender.fullname || "@" + message.sender.username || ""}
           <span className="ms-3 text-sm font-normal text-gray-500 dark:text-gray-400">
-            11:30 18/11/2025
+            {new Date(message.createdAt).toLocaleTimeString()}
           </span>
         </span>
-        <div className="max-w-8/12 rounded-xl bg-gray-200 p-3 dark:bg-gray-700">
-          <p className="text-md font-normal text-gray-800 dark:text-gray-100">
-            That's awesome. I think our users will really appreciate the
-            improvements. {id}
-          </p>
+        <div
+          className={`w-fit rounded-xl p-3 ${
+            isOwnMessage
+              ? "self-end bg-blue-100 text-gray-900 dark:bg-blue-700 dark:text-white"
+              : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-100"
+          }`}
+        >
+          <p className="text-md font-normal">{message.content}</p>
         </div>
       </div>
     </div>

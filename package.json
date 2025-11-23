@@ -12,6 +12,7 @@
     "format:check": "prettier . --check"
   },
   "dependencies": {
+    "axios": "^1.13.2",
     "flowbite-react": "^0.12.4",
     "formik": "^2.4.9",
     "react": "^19.1.0",

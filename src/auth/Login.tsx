@@ -2,6 +2,7 @@ import { Button, Checkbox, Label, TextInput } from "flowbite-react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useNavigate } from "react-router-dom";
+import AuthService from "../services/authService";
 
 const API_BASE_URL = "http://localhost:5000/api";
 
@@ -29,41 +30,18 @@ export default function Login() {
     onSubmit: async (values, { setSubmitting, setStatus }) => {
       setStatus(undefined);
       try {
-        const res = await fetch(`${API_BASE_URL}/auth/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: values.username,
-            password: values.password,
-          }),
-        });
+        setSubmitting(true);
 
-        const data = await res.json();
+        const res = await AuthService.login(values);
+        if (res.status === "success") {
+          // Lưu token + user
+          localStorage.setItem("chat-token", res.data.token);
+          localStorage.setItem("chat-user", JSON.stringify(res.data.user));
 
-        if (!res.ok || data.status !== "success") {
-          setStatus(
-            data.message || "Đăng nhập thất bại, vui lòng kiểm tra lại.",
-          );
-          return;
+          navigate("/chat");
         }
-
-        // Lưu token + user
-        localStorage.setItem("chat-token", data.data.token);
-        localStorage.setItem("chat-user", JSON.stringify(data.data.user));
-
-        if (values.remember) {
-          localStorage.setItem("chat-remember-username", values.username);
-        } else {
-          localStorage.removeItem("chat-remember-username");
-        }
-
-        navigate("/chat");
-      } catch (err) {
-        setStatus(
-          "Không kết nối được server. Hãy kiểm tra lại server backend.",
-        );
+      } catch (err: any) {
+        setStatus(err.message);
       } finally {
         setSubmitting(false);
       }

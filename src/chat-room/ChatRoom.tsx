@@ -1,7 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ChatList from "./components/ChatList";
-import Conversation from "./components/Conversation";
 import Header from "./components/Header";
+import { ConversationType } from "../types/Conversation";
+import ConversationService from "../services/ConversationService";
+import { UserType } from "../types/User";
+import UserService from "../services/UserService";
+import SocketService from "../services/SocketService";
+import { useSearchParams } from "react-router-dom";
+import Conversation from "./components/Conversation";
+import type { MessageType } from "../types/Message";
+import MessageService from "../services/MessageService";
 
 export type Chat = {
   id: number;
@@ -14,110 +22,145 @@ export type Chat = {
 };
 
 export default function ChatRoom() {
-  // danh sách chat
-  const [chats, setChats] = useState<Chat[]>([
-    {
-      id: 1,
-      name: "Minh",
-      lastMessage: "Mai đi học nha",
-      time: "08:31",
-      isGroup: false,
-    },
-    {
-      id: 2,
-      name: "Thầy Tuan - CNPM",
-      lastMessage: "Nộp bài nhé",
-      time: "Hôm qua",
-      isGroup: false,
-    },
-    {
-      id: 3,
-      name: "Sister",
-      lastMessage: "Về ăn cơm",
-      time: "Thứ 2",
-      isGroup: false,
-    },
-    {
-      id: 4,
-      name: "Tuan",
-      lastMessage: "Về ăn cơm",
-      time: "Thứ 2",
-      isGroup: false,
-    },
-  ]);
+  const [searchParams] = useSearchParams();
+  const curId = searchParams.get("id");
+  const [conversations, setConversations] = useState<ConversationType[]>([]);
+  const [currentCnversation, setCurrentCnversation] =
+    useState<ConversationType | null>(null);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [userIds, setUserIds] = useState<string[]>([]);
+  const [newConversationName, setNewConversationName] = useState("");
+  const [isOpenPopup, setIsOpenPopup] = useState(false);
+  const [messages, setMessages] = useState<MessageType[]>([]);
 
-  const [activeId, setActiveId] = useState<number | null>(1);
-
-  // popup state
-  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
-  const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
-  const [groupName, setGroupName] = useState("");
-  const [baseChatId, setBaseChatId] = useState<number | null>(null);
-
-  // mở popup tạo nhóm
-  const openCreateGroup = (fromChatId: number) => {
-    const base = chats.find((c) => c.id === fromChatId);
-    if (!base) return;
-
-    setBaseChatId(fromChatId);
-
-    if (!base.isGroup) {
-      setSelectedMemberIds([fromChatId]);
+  const selectUser = (userId: string) => {
+    if (userIds.includes(userId)) {
+      setUserIds(userIds.filter((id) => id !== userId));
     } else {
-      setSelectedMemberIds([]);
+      setUserIds([...userIds, userId]);
     }
-
-    setGroupName("");
-    setIsCreatingGroup(true);
   };
 
-  // tick/untick
-  const toggleMember = (id: number) => {
-    setSelectedMemberIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+  const clearPopup = () => {
+    setUserIds([]);
+    setNewConversationName("");
   };
 
-  const cancelCreateGroup = () => {
-    setIsCreatingGroup(false);
-    setSelectedMemberIds([]);
-    setGroupName("");
-    setBaseChatId(null);
+  const openPopupCreateConversation = () => {
+    setIsOpenPopup(true);
+    clearPopup();
   };
 
-  // xác nhận tạo nhóm
-  const confirmCreateGroup = () => {
-    if (selectedMemberIds.length === 0) {
-      alert("Hãy chọn ít nhất một thành viên.");
-      return;
+  const cancelCreateConversation = () => {
+    setIsOpenPopup(false);
+    clearPopup();
+  };
+
+  const confirmCreateConversation = async () => {
+    const dataSubmit = { name: newConversationName, userIds: userIds };
+    try {
+      const res = await ConversationService.create(dataSubmit);
+      if (res.status === "success") {
+        cancelCreateConversation();
+      }
+    } catch (error) {
+      console.log(error);
     }
+  };
 
-    const memberNames = chats
-      .filter((c) => selectedMemberIds.includes(c.id))
-      .map((c) => c.name.trim());
+  const sendMessage = async (content: string) => {
+    if (currentCnversation && content) {
+      const res = await MessageService.sendMessage({
+        conversationId: currentCnversation._id,
+        content,
+      });
 
-    const uniqueNames = Array.from(new Set(memberNames));
-    if (uniqueNames.length === 0) return;
+      if (res.status === "success") {
+        setMessages([res.data, ...messages]);
+      }
+    }
+  };
 
-    const finalGroupName =
-      groupName.trim().length > 0 ? groupName.trim() : uniqueNames.join(", ");
-
-    const newChat: Chat = {
-      id: Date.now(),
-      name: finalGroupName,
-      lastMessage: "Thành viên: " + uniqueNames.join(", "),
-      time: "Vừa xong",
-      isGroup: true,
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const res = await ConversationService.getALl();
+        if (res.status === "success") {
+          setConversations(res.data);
+        }
+      } catch (error) {
+        console.log(error);
+      }
     };
 
-    setChats((prev) => [...prev, newChat]);
-    setActiveId(newChat.id);
+    const fetchUsers = async () => {
+      try {
+        const res = await UserService.getALl();
+        if (res.status === "success") {
+          setUsers(res.data);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
 
-    cancelCreateGroup();
+    fetchConversations();
+    fetchUsers();
+  }, []);
+
+  const fetchMessages = async (conversationId: string) => {
+    if (conversationId) {
+      try {
+        const res = await MessageService.getByConversation(conversationId);
+        if (res.status === "success") {
+          setMessages(res.data);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+  const fetchConversation = async () => {
+    if (curId) {
+      try {
+        const res = await ConversationService.getById(curId);
+        console.log(res);
+
+        if (res.status === "success") {
+          setCurrentCnversation(res.data);
+          await fetchMessages(res.data._id);
+          SocketService.joinConversation(res.data._id);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
   };
 
-  // chỉ chọn cá nhân
-  const candidateMembers = chats.filter((c) => !c.isGroup);
+  useEffect(() => {
+    console.log(curId);
+
+    if (!curId) return;
+    fetchConversation();
+  }, [curId]);
+
+  // Xử lý socket
+  useEffect(() => {
+    SocketService.connect();
+
+    SocketService.onNewConversation((data) => {
+      setConversations((prev) => [data, ...prev]);
+    });
+
+    SocketService.onNewMessage((data) => {
+      console.log(data);
+      setMessages((prev) => [data, ...prev]);
+    });
+
+    return () => {
+      SocketService.disconnect();
+    };
+  }, []);
 
   return (
     <div>
@@ -127,19 +170,17 @@ export default function ChatRoom() {
         {/* LEFT SIDE */}
         <div className="h-[calc(100vh-60px)] w-[400px] border-r border-gray-200 bg-gray-100 dark:bg-gray-800">
           <ChatList
-            chats={chats}
-            activeId={activeId}
-            onSelect={(id) => setActiveId(id)}
-            onCreateGroup={(id) => openCreateGroup(id)}
+            onOpenCreateConversation={openPopupCreateConversation}
+            conversations={conversations}
           />
         </div>
 
         {/* RIGHT SIDE */}
-        <Conversation chatId={activeId} />
+        <Conversation messages={messages} onSend={sendMessage} />
       </div>
 
       {/* POPUP TẠO NHÓM */}
-      {isCreatingGroup && (
+      {isOpenPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-lg dark:bg-gray-900">
             <h3 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -150,8 +191,8 @@ export default function ChatRoom() {
             <input
               type="text"
               placeholder="Đặt tên nhóm (không bắt buộc)"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
+              value={newConversationName}
+              onChange={(e) => setNewConversationName(e.target.value)}
               className="mb-3 w-full rounded-md border border-gray-300 px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
             />
 
@@ -160,18 +201,18 @@ export default function ChatRoom() {
             </p>
 
             <div className="mb-3 max-h-60 space-y-1 overflow-y-auto rounded-md border border-gray-200 p-2 dark:border-gray-700">
-              {candidateMembers.map((c) => (
+              {users.map((u) => (
                 <label
-                  key={c.id}
+                  key={u._id}
                   className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   <input
                     type="checkbox"
-                    checked={selectedMemberIds.includes(c.id)}
-                    onChange={() => toggleMember(c.id)}
+                    checked={userIds.includes(u._id)}
+                    onChange={() => selectUser(u._id)}
                   />
                   <span className="text-gray-800 dark:text-gray-100">
-                    {c.name}
+                    {u.fullname || `@${u.username}`}
                   </span>
                 </label>
               ))}
@@ -179,13 +220,13 @@ export default function ChatRoom() {
 
             <div className="flex justify-end gap-2 text-xs">
               <button
-                onClick={cancelCreateGroup}
+                onClick={cancelCreateConversation}
                 className="rounded-md border px-3 py-1 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
               >
                 Hủy
               </button>
               <button
-                onClick={confirmCreateGroup}
+                onClick={confirmCreateConversation}
                 className="rounded-md bg-blue-600 px-3 py-1 font-semibold text-white hover:bg-blue-700"
               >
                 Tạo nhóm
