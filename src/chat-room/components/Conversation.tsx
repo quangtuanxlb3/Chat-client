@@ -1,62 +1,19 @@
 import { useState, useEffect, KeyboardEvent, useRef } from "react";
-
-type Message = {
-  id: number;
-  fromMe: boolean;
-  text?: string;
-  time: string;
-  image?: string;
-  file?: {
-    name: string;
-    size: number;
-    url: string;
-  };
-  sticker?: string;
-};
-
-const initialMessages: Message[] = [
-  {
-    id: 1,
-    fromMe: false,
-    text: "Hello, đây là demo tin nhắn của UTChat.",
-    time: "09:00",
-  },
-  {
-    id: 2,
-    fromMe: true,
-    text: "OK, Chao cau 😄",
-    time: "09:01",
-  },
-];
+import type { MessageType } from "../../types/Message";
+import ConversationItem from "./ConversationItem";
 
 type Props = {
-  chat?: { id: number; name: string } | null;
-  messages?: Message[];
+  messages: MessageType[];
   onSend?: (text: string) => void;
   onSendImage?: (file: File) => void;
   onSendFile?: (file: File) => void;
   onSendSticker?: (stickerUrl: string) => void;
 };
 
-export default function Conversation({
-  chat,
-  messages: messagesProp,
-  onSend,
-  onSendImage,
-  onSendFile,
-  onSendSticker,
-}: Props) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+export default function Conversation({ messages = [], onSend }: Props) {
   const [input, setInput] = useState("");
+  const user = JSON.parse(localStorage.getItem("chat-user") || "{}");
   const listRef = useRef<HTMLDivElement | null>(null);
-
-  // TEST KẾT NỐI SERVER
-  useEffect(() => {
-    fetch("http://localhost:5000/api/messages")
-      .then((res) => res.json())
-      .then((data) => console.log("Kết nối server OK:", data))
-      .catch((err) => console.error("Lỗi kết nối server:", err));
-  }, []);
 
   const nowString = () =>
     new Date().toLocaleTimeString("vi-VN", {
@@ -69,80 +26,20 @@ export default function Conversation({
     const content = input.trim();
     if (!content) return;
 
-    const msg: Message = {
-      id: Date.now(),
-      fromMe: true,
-      text: content,
-      time: nowString(),
-    };
-
     if (onSend) {
       onSend(content);
-    } else {
-      setMessages((prev) => [...prev, msg]);
     }
     setInput("");
   };
 
   // Gửi ảnh
-  const sendImage = (file: File) => {
-    if (onSendImage) return onSendImage(file);
-
-    const url = URL.createObjectURL(file);
-    const msg: Message = {
-      id: Date.now(),
-      fromMe: true,
-      image: url,
-      time: nowString(),
-    };
-
-    setMessages((prev) => [...prev, msg]);
-  };
+  const sendImage = (file: File) => {};
 
   // Gửi file
-  const sendFile = (file: File) => {
-    if (onSendFile) return onSendFile(file);
-
-    const url = URL.createObjectURL(file);
-    const msg: Message = {
-      id: Date.now(),
-      fromMe: true,
-      file: {
-        name: file.name,
-        size: file.size,
-        url,
-      },
-      time: nowString(),
-    };
-
-    setMessages((prev) => [...prev, msg]);
-  };
+  const sendFile = (file: File) => {};
 
   // Gửi sticker
-  const sendSticker = (stickerUrl: string) => {
-    if (onSendSticker) return onSendSticker(stickerUrl);
-
-    const msg: Message = {
-      id: Date.now(),
-      fromMe: true,
-      sticker: stickerUrl,
-      time: nowString(),
-    };
-
-    setMessages((prev) => [...prev, msg]);
-  };
-
-  // reset or load messages when selected chat changes (placeholder behavior)
-  useEffect(() => {
-    if (messagesProp) return; // parent is controlling messages
-    setMessages(initialMessages);
-  }, [chat?.id]);
-
-  // auto-scroll when messages change
-  useEffect(() => {
-    const node = listRef.current;
-    if (node) node.scrollTop = node.scrollHeight;
-  }, [messages, messagesProp]);
+  const sendSticker = (stickerUrl: string) => {};
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -166,51 +63,12 @@ export default function Conversation({
       </div>
 
       {/* Messages */}
-      <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
-        {(messagesProp ?? messages).map((m) => (
-          <div
-            key={m.id}
-            className={`flex ${m.fromMe ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
-                m.fromMe
-                  ? "rounded-br-none bg-blue-600 text-white"
-                  : "rounded-bl-none bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100"
-              }`}
-            >
-              {/* TEXT */}
-              {m.text && <div>{m.text}</div>}
-
-              {/* IMAGE */}
-              {m.image && (
-                <img
-                  src={m.image}
-                  className="mt-1 max-h-60 rounded-lg border border-gray-300 dark:border-gray-600"
-                />
-              )}
-
-              {/* FILE */}
-              {m.file && (
-                <a
-                  href={m.file.url}
-                  download={m.file.name}
-                  className="mt-2 flex flex-col rounded-md bg-gray-200 p-2 text-xs text-gray-800 dark:bg-gray-700 dark:text-gray-100"
-                >
-                  <span className="font-semibold">{m.file.name}</span>
-                  <span>{(m.file.size / 1024).toFixed(1)} KB</span>
-                </a>
-              )}
-
-              {/* STICKER */}
-              {m.sticker && <img src={m.sticker} className="mt-1 h-20 w-20" />}
-
-              {/* TIME */}
-              <div className="mt-1 text-right text-[10px] opacity-70">
-                {m.time}
-              </div>
-            </div>
-          </div>
+      <div
+        className="flex flex-1 flex-col-reverse overflow-y-auto p-5"
+        ref={listRef}
+      >
+        {messages.map((m, i) => (
+          <ConversationItem key={i} message={m} />
         ))}
       </div>
 

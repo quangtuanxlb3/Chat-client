@@ -1,18 +1,14 @@
 import ChatItem from "./ChatItem";
-import type { Chat } from "../ChatRoom";
+import type { ConversationType } from "../../types/Conversation";
 
 type Props = {
-  chats: Chat[];
-  activeId: number | null;
-  onSelect: (id: number) => void;
-  onCreateGroup: (baseChatId: number) => void; // ⭐ thêm props mới
+  onOpenCreateConversation: () => void; // ⭐ thêm props mới
+  conversations: ConversationType[];
 };
 
 export default function ChatList({
-  chats,
-  activeId,
-  onSelect,
-  onCreateGroup,
+  onOpenCreateConversation,
+  conversations,
 }: Props) {
   return (
     <div className="flex h-full flex-col">
@@ -24,11 +20,8 @@ export default function ChatList({
 
           {/* ⭐ Nút Tạo Nhóm */}
           <button
+            onClick={onOpenCreateConversation}
             type="button"
-            onClick={() => {
-              if (activeId) onCreateGroup(activeId);
-              else alert("Hãy chọn đoạn chat trước.");
-            }}
             className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow hover:bg-blue-700"
           >
             +
@@ -44,16 +37,9 @@ export default function ChatList({
 
       <div className="flex-1 overflow-y-auto p-2">
         <ul className="space-y-1">
-          {chats.map((c) => (
-            <li key={c.id}>
-              <ChatItem
-                name={c.name}
-                lastMessage={c.lastMessage}
-                time={c.time}
-                unread={c.unread}
-                active={activeId === c.id}
-                onClick={() => onSelect(c.id)}
-              />
+          {conversations.map((c) => (
+            <li key={c._id}>
+              <ChatItem conversation={c} onClick={() => {}} />
             </li>
           ))}
         </ul>
