@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const AxiosClient = axios.create({
   baseURL: "http://localhost:5000/api",
@@ -23,7 +24,17 @@ AxiosClient.interceptors.request.use(
 
 // Xử lý response
 AxiosClient.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    if (response?.data?.status === "error" && response?.data?.message) {
+      toast.error(response.data.message);
+    }
+
+    if (response?.data?.status === "success" && response?.data?.message) {
+      toast.success(response.data.message);
+    }
+
+    return response.data;
+  },
   (error) => {
     // if (error.response?.status === 401) {
     //   // Token invalid hoặc hết hạn

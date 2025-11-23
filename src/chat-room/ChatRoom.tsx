@@ -25,7 +25,7 @@ export default function ChatRoom() {
   const [searchParams] = useSearchParams();
   const curId = searchParams.get("id");
   const [conversations, setConversations] = useState<ConversationType[]>([]);
-  const [currentCnversation, setCurrentCnversation] =
+  const [currentConversation, setCurrentConversation] =
     useState<ConversationType | null>(null);
   const [users, setUsers] = useState<UserType[]>([]);
   const [userIds, setUserIds] = useState<string[]>([]);
@@ -69,9 +69,9 @@ export default function ChatRoom() {
   };
 
   const sendMessage = async (content: string) => {
-    if (currentCnversation && content) {
+    if (currentConversation && content) {
       const res = await MessageService.sendMessage({
-        conversationId: currentCnversation._id,
+        conversationId: currentConversation._id,
         content,
       });
 
@@ -127,7 +127,7 @@ export default function ChatRoom() {
         console.log(res);
 
         if (res.status === "success") {
-          setCurrentCnversation(res.data);
+          setCurrentConversation(res.data);
           await fetchMessages(res.data._id);
           SocketService.joinConversation(res.data._id);
         }
