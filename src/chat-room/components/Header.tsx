@@ -19,7 +19,7 @@ export default function Header() {
       window.location.href = "/";
     }
   };
-
+  const user = JSON.parse(localStorage.getItem("chat-user") || "{}");
   return (
     <header className="flex h-[60px] items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-gray-800 dark:bg-gray-900">
       <div className="flex items-center gap-2">
@@ -29,7 +29,7 @@ export default function Header() {
 
       <div className="flex items-center gap-3">
         <div className="text-right text-xs">
-          <div className="font-semibold text-gray-900 dark:text-gray-100">Tuancry</div>
+          <div className="font-semibold text-gray-900 dark:text-gray-100">{user.fullname || user.username}</div>
           <div className="text-[11px] text-emerald-500">Đang hoạt động</div>
         </div>
 
